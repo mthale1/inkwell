@@ -1,8 +1,7 @@
 ## Definition of Done
 A backlog item is Done when:
 - [ ] Code is committed with a descriptive message
-- [ ] It runs locally per the relevant lecture's Code Walkthr
-ough
+- [ ] It runs locally per the relevant lecture's Code Walkthrough
 - [ ] It does not break previously-passing verification steps
 - [ ] New setup steps are documented here
 ## Process
