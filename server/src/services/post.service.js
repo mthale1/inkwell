@@ -8,7 +8,7 @@ import { SubstringSearchStrategy } from "./search/substring-search.strategy.js";
 const searchStrategy = SubstringSearchStrategy; // swap thisline to change search behavior system-wide
 
 export const PostService = {
-    async publish({ authorId, title, body }) {
+    async publish({ authorId, title, body, tagNames = [] }) {
         assertNonEmpty(title, "title", "MISSING_TITLE");
         assertNonEmpty(body, "body", "MISSING_BODY");
 
@@ -16,6 +16,7 @@ export const PostService = {
             authorId,
             title,
             body,
+            tagNames,
             status: "PUBLISHED",
             publishedAt: new Date(),
         });
@@ -24,7 +25,7 @@ export const PostService = {
             postId: post.id,
             authorId,
             title: post.title,
-            //tags: tagNames,
+            tags: tagNames,
         });
 
         return post;
