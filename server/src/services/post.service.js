@@ -24,7 +24,7 @@ export const PostService = {
             postId: post.id,
             authorId,
             title: post.title,
-            tags: tagNames,
+            //tags: tagNames,
         });
 
         return post;
