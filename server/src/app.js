@@ -12,6 +12,7 @@ app.use(express.json());
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
 app.use("/api", postRoutes);
+app.use("/api", statsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
