@@ -90,3 +90,12 @@ test("a registered user can log in with the same credentials", async () => {
   expect(loginRes.body.accessToken.length).toBeGreaterThan(0);
   expect(loginRes.body.user).not.toHaveProperty("passwordHash");
 });
+
+test("rejects an oversized pageSize to limit denial of service risk", async () => {
+  const response = await request(app)
+      .get("/api/posts")
+      .query({ pageSize: 1000000 });
+
+  expect(response.status).toBe(400);
+  expect(response.body.error.code).toBe("INVALID_PAGE_SIZE");
+});

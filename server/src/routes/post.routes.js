@@ -26,14 +26,31 @@ router.post("/posts", requireAuth, async (req, res, next) => {
 
 router.get("/posts", async (req, res, next) => {
     try {
-        const { page = 1, search } = req.query;
+        const { page = 1, pageSize = 10, search } = req.query;
+        const parsedPageSize = Number(pageSize);
+
+        if (
+            !Number.isInteger(parsedPageSize) ||
+            parsedPageSize < 1 ||
+            parsedPageSize > 50
+        ) {
+            return res.status(400).json({
+                error: {
+                    code: "INVALID_PAGE_SIZE",
+                    message: "pageSize must be an integer between 1 and 50.",
+                },
+            });
+        }
+
         const result = search
             ? await PostService.search({
                 query: search,
                 page: Number(page),
+                pageSize: parsedPageSize,
             })
             : await PostService.listPublished({
                 page: Number(page),
+                pageSize: parsedPageSize,
             });
 
         res.status(200).json(result);
