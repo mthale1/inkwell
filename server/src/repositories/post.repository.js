@@ -1,6 +1,7 @@
 // server/src/repositories/post.repository.js
 
 import { prisma } from "../db/client.js";
+import { toPublicUser } from "../dto/user.dto.js";
 
 export const PostRepository = {
     create({ authorId, title, body, status, publishedAt }) {
@@ -11,41 +12,48 @@ export const PostRepository = {
 
     createWithTags({ authorId, title, body, status, publishedAt, tagNames }) {
         return prisma.post.create({
-          data: {
-            authorId,
-            title,
-            body,
-            status,
-            publishedAt,
-            tags: {
-              create: tagNames.map((name) => ({
-                tag: {
-                  connectOrCreate: {
-                    where: { name },
-                    create: { name },
-                  },
+            data: {
+                authorId,
+                title,
+                body,
+                status,
+                publishedAt,
+                tags: {
+                    create: tagNames.map((name) => ({
+                        tag: {
+                            connectOrCreate: {
+                                where: { name },
+                                create: { name },
+                            },
+                        },
+                    })),
                 },
-              })),
             },
-          },
-          include: {
-            tags: {
-              include: { tag: true },
+            include: {
+                tags: {
+                    include: { tag: true },
+                },
             },
-          },
         });
-      },
+    },
 
     async findPublished({ page, pageSize }) {
         const rows = await prisma.post.findMany({
             where: { status: "PUBLISHED" },
+            include: { author: true },
             orderBy: { publishedAt: "desc" },
             skip: (page - 1) * pageSize,
             take: pageSize + 1, // fetch one extra row to compute hasMore
         });
 
         const hasMore = rows.length > pageSize;
-        return { posts: rows.slice(0, pageSize), hasMore };
+        return {
+            posts: rows.slice(0, pageSize).map((post) => ({
+                ...post,
+                author: toPublicUser(post.author),
+            })),
+            hasMore,
+        };
     },
 
     async searchPublished({ query, page, pageSize }) {
@@ -59,12 +67,19 @@ export const PostRepository = {
 
         const rows = await prisma.post.findMany({
             where,
+            include: { author: true },
             orderBy: { publishedAt: "desc" },
             skip: (page - 1) * pageSize,
             take: pageSize + 1,
         });
 
         const hasMore = rows.length > pageSize;
-        return { posts: rows.slice(0, pageSize), hasMore };
+        return {
+            posts: rows.slice(0, pageSize).map((post) => ({
+                ...post,
+                author: toPublicUser(post.author),
+            })),
+            hasMore,
+        };
     },
 };

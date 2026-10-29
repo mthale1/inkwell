@@ -2,10 +2,11 @@
 
 import { Router } from "express";
 import { AuthService, EmailAlreadyRegisteredError, WeakPasswordError, InvalidCredentialsError } from "../services/auth.service.js";
+import { authRateLimiter } from "../middleware/rate-limit.middleware.js";
 
 const router = Router();
 
-router.post("/auth/register", async (req, res) => {
+router.post("/auth/register", authRateLimiter, async (req, res) => {
     try {
         const result = await AuthService.register(req.body);
         const { passwordHash, ...safeUser } = result.user;
@@ -24,11 +25,11 @@ router.post("/auth/register", async (req, res) => {
             return res.status(400).json({ error: { code: "WEAK_PASSWORD", message: "Password does not meet strength requirements." } });
         }
 
-    res.status(400).json({ error: { code: err.code || "VALIDATION_ERROR", message: err.message }});
+        res.status(400).json({ error: { code: err.code || "VALIDATION_ERROR", message: err.message }});
     }
 });
 
-router.post("/auth/login", async (req, res) => {
+router.post("/auth/login", authRateLimiter, async (req, res) => {
     try {
         const result = await AuthService.login(req.body);
         const { passwordHash, ...safeUser } = result.user;
@@ -47,4 +48,4 @@ router.post("/auth/login", async (req, res) => {
     }
 });
 
-export default router;    
+export default router;
