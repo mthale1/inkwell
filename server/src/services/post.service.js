@@ -8,6 +8,14 @@ import { SubstringSearchStrategy } from "./search/substring-search.strategy.js";
 const searchStrategy = SubstringSearchStrategy; // swap thisline to change search behavior system-wide
 
 export const PostService = {
+    async getById(id) {
+        return PostRepository.findById(id);
+    },
+
+    async delete(id) {
+        return PostRepository.delete(id);
+    },
+    
     async publish({ authorId, title, body, tagNames = [] }) {
         assertNonEmpty(title, "title", "MISSING_TITLE");
         assertNonEmpty(body, "body", "MISSING_BODY");

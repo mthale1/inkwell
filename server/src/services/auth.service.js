@@ -1,13 +1,14 @@
 // server/src/services/auth.service.js
 //
-// Section 4.5's "Magic Numbers" anti-pattern, corrected: thebcrypt
+// Section 4.5's "Magic Numbers" anti-pattern, corrected: the bcrypt
 // cost factor and minimum password length are now named constants,
-// not bare literals a future reader would have to guess themeaning of. order.
+// not bare literals a future reader would have to guess the meaning of.
 
 import bcrypt from "bcrypt";
 import { UserRepository } from "../repositories/user.repository.js";
 import { assertNonEmpty, ValidationError } from "../utils/validation.js";
 import { TokenService } from "./token.service.js";
+import { logger } from "../lib/logger.js";
 
 class EmailAlreadyRegisteredError extends Error {}
 class WeakPasswordError extends Error {}
@@ -33,17 +34,16 @@ export const AuthService = {
         }
 
         const passwordHash = await bcrypt.hash(password, BCRYPT_COST_FACTOR);
-        
+
         let user;
         try {
             user = await UserRepository.create({ email, displayName, passwordHash });
-        } 
-        catch (err) {
-            // Defense in depth (Lecture 4): the DB's @unique constraint may 
+        } catch (err) {
+            // Defense in depth (Lecture 4): the DB's @unique constraint may
             // reject a race-condition duplicate that slipped past the check above.
-
             throw new EmailAlreadyRegisteredError();
         }
+
         const tokens = TokenService.issueTokens(user);
         return { user, ...tokens };
     },
@@ -51,17 +51,16 @@ export const AuthService = {
     async login({ email, password }) {
         const user = await UserRepository.findByEmail(email);
 
-        if (!user) {
+        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+            logger.warn(
+                { event: "auth.login.failed", email },
+                "Failed login attempt"
+            );
             throw new InvalidCredentialsError();
         }
 
-        const matches = await bcrypt.compare(password, user.passwordHash);
-
-        if (!matches) {
-            throw new InvalidCredentialsError();
-        }
         const tokens = TokenService.issueTokens(user);
-        
+
         return { user, ...tokens };
     },
 };
@@ -71,4 +70,4 @@ export {
     WeakPasswordError,
     InvalidCredentialsError,
     ValidationError,
-  };
+};

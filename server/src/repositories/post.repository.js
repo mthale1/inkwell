@@ -4,6 +4,24 @@ import { prisma } from "../db/client.js";
 import { toPublicUser } from "../dto/user.dto.js";
 
 export const PostRepository = {
+    findById(id) {
+        return prisma.post.findUnique({
+            where: { id },
+        });
+    },
+
+    async delete(id) {
+        return prisma.$transaction(async (tx) => {
+            await tx.postTag.deleteMany({
+                where: { postId: id },
+            });
+
+            return tx.post.delete({
+                where: { id },
+            });
+        });
+    },
+    
     create({ authorId, title, body, status, publishedAt }) {
         return prisma.post.create({
             data: { authorId, title, body, status, publishedAt },
