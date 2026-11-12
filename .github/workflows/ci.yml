@@ -70,7 +70,9 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: server
-        run: npm test -- --coverage
+        run: |
+          printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > .env.test
+          npm test -- --coverage
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v6
