@@ -1,0 +1,65 @@
+# .github/workflows/cd-production.yml
+#
+# Section 4.1's explicit choice: Continuous DELIVERY, not Continuous
+# DEPLOYMENT — this workflow exists and is ready, but requires a human
+# to actually trigger it. Nothing reaches production automatically.
+
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        description: "Full 40-character Git SHA of the staging-verified image to promote"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    env:
+      APP_URL: ${{ vars.PRODUCTION_URL }}
+      DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      SHA: ${{ inputs.confirm_sha }}
+
+    steps:
+      - name: Validate the requested SHA
+        run: |
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::confirm_sha must be a full 40-character lowercase Git SHA"
+            exit 1
+          fi
+
+      - name: Deploy the staging-verified image to production
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/inkwell-server:${SHA}"
+          echo "Deploying $IMAGE"
+          curl -fsS -X POST "${DEPLOY_HOOK}&imgURL=${IMAGE}"
+
+      - name: Wait for production to respond
+        run: |
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 30 "$APP_URL/api/health"; then
+              echo "Production answered on attempt $attempt"; exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Production did not answer within 10 minutes"; exit 1
+
+      - name: Run production smoke tests
+        run: |
+          curl -fsS --max-time 30 "$APP_URL/api/health"; echo
+          curl -fsS --max-time 30 "$APP_URL/api/posts?page=1" > /dev/null
+          echo "Smoke tests passed"
