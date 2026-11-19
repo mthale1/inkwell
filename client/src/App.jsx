@@ -4,11 +4,12 @@
 // This file's only job is routing + layout — no business logic here, the same 
 // "thin top layer" discipline we applied to server/src/index.js in Lecture 5.
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
 import { Feed } from "./components/Feed";
 import { PostEditor } from "./components/PostEditor";
 import { LoginForm } from "./components/LoginForm";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { getToken } from "./lib/auth";
 
 export default function App() {
     return (
@@ -16,7 +17,10 @@ export default function App() {
         <NavBar />
         <main className="w-full px-4 py-6 md:max-w-2xl md:mx-auto md:px-6 md:py-8">        <Routes>
         <Route path="/" element={<Feed />} />
-        <Route path="/write" element={<PostEditor />} />
+        <Route
+            path="/write"
+            element={getToken() ? <PostEditor /> : <Navigate to="/login" replace />}
+        />
         <Route path="/login" element={<LoginForm />} />
         </Routes>
         </main>
